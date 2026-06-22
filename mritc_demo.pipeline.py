@@ -369,20 +369,27 @@ class MRITCDemoPipeline(BasePipeline):
                     # Construct the ImageData instance with necessary metadata
                     # ruff: noqa: ERA001
                     image_data = ImageData(
-                        # iFDO core
+                        # iFDO core (all required: 16 set-header + 3 per-item)
                         image_datetime=datetime.strptime(iso_timestamp, "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc),
                         image_latitude=float(first_row["UsblLatitude"]),
                         image_longitude=float(first_row["UsblLongitude"]),
-                        image_altitude=float(first_row["Altitude"]),
+                        image_altitude_meters=float(first_row["Altitude"]),
                         image_coordinate_reference_system="EPSG:4326",
-                        # image_coordinate_uncertainty_meters=None,
-                        # image_context=None,
-                        # image_project=None,
+                        image_coordinate_uncertainty_meters=10.0,
+                        image_context=ImageContext(
+                            name="Recovery of deep-sea seamount ecosystems and the status of deep-sea corals "
+                            "in Australian and New Zealand regions",
+                        ),
+                        image_project=ImageContext(name=self.config.get("voyage_id")),
                         image_event=ImageContext(name=deployment_id),
                         image_platform=ImageContext(name=self.config.get("platform_id")),
                         image_sensor=ImageContext(name=str(first_row["Camera"])),
-                        # image_uuid=None, left unset so Marimba mints a deterministic per-image UUID at
-                        # packaging time (uuid5 of the image-set UUID and the dataset-relative path).
+                        # Marimba mints a deterministic per-image UUID at packaging time
+                        # image_uuid=None,
+                        # Marimba automatically calculates and injects the SHA256 hash at packaging time
+                        # image_hash_sha256=None,
+                        # Marimba does not populate image_handle; it is a per-image download URI set at distribution
+                        # image_handle=None,
                         image_pi=ImagePI(name="Keiko Abe", uri="https://orcid.org/0000-0000-0000-0000"),
                         image_creators=[ImageCreator(name="Keiko Abe", uri="https://orcid.org/0000-0000-0000-0000")],
                         image_license=ImageLicense(
@@ -390,18 +397,19 @@ class MRITCDemoPipeline(BasePipeline):
                             uri="https://creativecommons.org/licenses/by-nc-sa/4.0/",
                         ),
                         image_copyright="CSIRO",
-                        # image_abstract=None,
-                        # Note: Marimba automatically calculates and injects the SHA256 hash during packaging
-                        # image_hash_sha256=image_hash_sha256,
+                        image_abstract=(
+                            "High-definition video and stereo stills imagery collected with the CSIRO MRI Deep "
+                            "Towed Camera System (MRITC) during voyage IN2018_V06."
+                        ),
 
-                        # # iFDO capture (optional)
+                        # iFDO capture (optional)
                         image_acquisition=ImageAcquisition.PHOTO,
                         image_quality=ImageQuality.PRODUCT,
                         image_deployment=ImageDeployment.SURVEY,
                         image_navigation=ImageNavigation.SATELLITE,
                         # image_scale_reference=ImageScaleReference.NONE,
                         image_illumination=ImageIllumination.ARTIFICIAL_LIGHT,
-                        image_pixel_mag=ImagePixelMagnitude.CM,
+                        image_pixel_magnitude=ImagePixelMagnitude.CM,
                         image_marine_zone=ImageMarineZone.SEAFLOOR,
                         image_spectral_resolution=ImageSpectralResolution.RGB,
                         image_capture_mode=ImageCaptureMode.TIMER,
@@ -429,6 +437,7 @@ class MRITCDemoPipeline(BasePipeline):
                         # image_time_synchronisation=None,
                         image_item_identification_scheme="<platform_id>_<camera_id>_<voyage_id>_<deployment_number>_<datetimestamp>_<image_id>.<ext>",
                         image_curation_protocol=f"Processed with Marimba v{__version__}",
+                        # image_visual_constraints=None,
 
                         # # iFDO content (optional)
                         # image_entropy=0.0,
