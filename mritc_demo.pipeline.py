@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from shutil import copy2
 from typing import Any
-from uuid import uuid4
 
 import exiftool
 import pandas as pd
@@ -382,7 +381,8 @@ class MRITCDemoPipeline(BasePipeline):
                         image_event=ImageContext(name=deployment_id),
                         image_platform=ImageContext(name=self.config.get("platform_id")),
                         image_sensor=ImageContext(name=str(first_row["Camera"])),
-                        image_uuid=str(uuid4()),
+                        # image_uuid=None, left unset so Marimba mints a deterministic per-image UUID at
+                        # packaging time (uuid5 of the image-set UUID and the dataset-relative path).
                         image_pi=ImagePI(name="Keiko Abe", uri="https://orcid.org/0000-0000-0000-0000"),
                         image_creators=[ImageCreator(name="Keiko Abe", uri="https://orcid.org/0000-0000-0000-0000")],
                         image_license=ImageLicense(
