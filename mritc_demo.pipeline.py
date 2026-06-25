@@ -194,12 +194,12 @@ class MRITCDemoPipeline(BasePipeline):
                         f"{voyage_parts[0]}_{voyage_parts[1]}_{deployment_id}_"
                         f"{iso_timestamp}_{index:04d}.JPG"
                     )
-                self.logging.exception(f"No EXIF DateTime tag found in image {file_path}")
+                self.logger.exception(f"No EXIF DateTime tag found in image {file_path}")
             else:
-                self.logging.exception(f"No EXIF data found in image {file_path}")
+                self.logger.exception(f"No EXIF data found in image {file_path}")
 
         except OSError:
-            self.logging.exception(f"Error: Unable to open {file_path}. Are you sure it's an image?")
+            self.logger.exception(f"Error: Unable to open {file_path}. Are you sure it's an image?")
 
         # Return a default or error filename if necessary
         return "default_filename.JPG"
@@ -209,10 +209,13 @@ class MRITCDemoPipeline(BasePipeline):
         try:
             result: list[dict[str, str]] = et.get_tags([file_path], tags=[self.CREATION_TIME_TAG])
             creation_time_str = result[0].get(self.CREATION_TIME_TAG, "00:00:00 00:00:00.000000Z")
-            creation_time = datetime.strptime(creation_time_str, "%Y:%m:%d %H:%M:%S.%fZ")
+            # Newer exiftool emits ISO-8601 (e.g. 2018-12-14T20:02:13.000000Z); older versions emit the
+            # colon-separated form. Accept both so the parse is robust across exiftool versions.
+            datetime_format = "%Y-%m-%dT%H:%M:%S.%fZ" if "T" in creation_time_str else "%Y:%m:%d %H:%M:%S.%fZ"
+            creation_time = datetime.strptime(creation_time_str, datetime_format)
             return creation_time.strftime("%Y%m%dT%H%M%SZ")
         except Exception as e:
-            self.logging.exception(f"Error extracting timestamp from MP4: {e}")
+            self.logger.exception(f"Error extracting timestamp from MP4: {e}")
             return "000000T000000Z"
 
     def _process(
@@ -276,7 +279,7 @@ class MRITCDemoPipeline(BasePipeline):
                         self.logger.info(f"Renamed CSV {file.name} -> {output_file_path}")
 
                 except (OSError, FileNotFoundError) as e:
-                    self.logging.exception(f"Error processing file {file.name}: {e!s}")
+                    self.logger.exception(f"Error processing file {file.name}: {e!s}")
                     continue
 
         # Generate thumbnails for processed images
@@ -289,7 +292,7 @@ class MRITCDemoPipeline(BasePipeline):
                 image.resize_fit(jpg, 300, 300, output_path)
                 thumb_list.append(output_path)
             except Exception as e:
-                self.logging.exception(f"Error creating thumbnail for {jpg.name}: {e!s}")
+                self.logger.exception(f"Error creating thumbnail for {jpg.name}: {e!s}")
 
         # Create an overview image if thumbnails exist
         if thumb_list:
@@ -299,7 +302,7 @@ class MRITCDemoPipeline(BasePipeline):
             try:
                 image.create_grid_image(thumb_list, overview_path)
             except Exception as e:
-                self.logging.exception(f"Error creating overview image: {e!s}")
+                self.logger.exception(f"Error creating overview image: {e!s}")
 
     def _package(
         self,
